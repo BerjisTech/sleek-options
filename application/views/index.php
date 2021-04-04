@@ -2,13 +2,15 @@
 <html>
 
 <head>
-    <?php include 'header.php';?>
+    <?php include 'header.php'; ?>
 
     <!--script src="https://cdn.shopify.com/s/assets/external/app.js"></script>
 	<script type="text/javascript">
 		ShopifyApp.init({
-			apiKey: '<?php #echo $api_key; ?>',
-			shopOrigin: '<?php #echo 'https://'  . $_COOKIE['shop']. '.myshopify.com'; ?>'
+			apiKey: '<?php #echo $api_key; 
+                        ?>',
+			shopOrigin: '<?php #echo 'https://'  . $_COOKIE['shop']. '.myshopify.com'; 
+                            ?>'
             });
 	</script>
 	<script type="text/javascript">
@@ -26,19 +28,18 @@
 	</script-->
 </head>
 
-<body class="page-body skin-blue gray" data-url="<?php echo base_url(); ?>"
-    data-shop-url="https://<?php echo $shop; ?>.myshopify.com/">
+<body class="page-body skin-blue gray" data-url="<?php echo base_url(); ?>" data-shop-url="https://<?php echo $shop; ?>.myshopify.com/">
     <script type="text/javascript">
-    var base_url = '<?php echo base_url(); ?>';
-    var shop_url = 'https://<?php echo $shop; ?>.myshopify.com';
+        var base_url = '<?php echo base_url(); ?>';
+        var shop_url = 'https://<?php echo $shop; ?>.myshopify.com';
     </script>
     <div class="page-container">
         <div class="main-content">
             <!-- <div class="row">
-                <?php if ($page_name == 'dashboard'): ?>
+                <?php if ($page_name == 'dashboard') : ?>
                 
-                <?php endif;?>
-                <?php if ($page_name == 'new_options' || $page_name == 'edit_options'): ?>
+                <?php endif; ?>
+                <?php if ($page_name == 'new_options' || $page_name == 'edit_options') : ?>
                     <div class="col-md-6 col-sm-8 clearfix">
                         <ul class="user-info pull-left pull-right-xs pull-none-xsm">
                             <li>
@@ -46,27 +47,51 @@
                             </li>
                         </ul>
                     </div>
-                <?php endif;?>
+                <?php endif; ?>
             </div>
             <hr /> -->
-            <?php include $page_name . '.php';?>
+            <?php include $page_name . '.php'; ?>
             <div style="height: 100px;"></div>
         </div>
     </div>
 
     <style>
-    .footer {
-        position: fixed;
-        bottom: 0px;
-        background-color: white;
-        width: 100%;
-        border-top: 1px solid #ECECEC;
-        padding-top: 15px;
-        padding-bottom: 15px;
-    }
+        /* Customize website's scrollbar like Mac OS Not supports in Firefox and IE */
+
+        /* total width */
+        *::-webkit-scrollbar {
+            background-color: #fff;
+            width: 16px
+        }
+
+        /* background of the scrollbar except button or resizer */
+        *::-webkit-scrollbar-track {
+            background-color: #fff
+        }
+
+        *::-webkit-scrollbar-track:hover {
+            background-color: #f4f4f4
+        }
+
+        /* scrollbar itself */
+        *::-webkit-scrollbar-thumb {
+            background-color: #003471;
+            border-radius: 16px;
+            border: 5px solid #fff
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background-color: #003471;
+            border: 4px solid #f4f4f4
+        }
+
+        /* set button(top and bottom of the scrollbar) */
+        *::-webkit-scrollbar-button {
+            display: none
+        }
     </style>
 
-    <?php include 'footer.php';?>
+    <?php include 'footer.php'; ?>
 </body>
 
 </html>
