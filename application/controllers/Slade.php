@@ -14,92 +14,89 @@ class Slade extends CI_Controller
         $this->output->set_header("Expires: Mon, 26 Jul 2025 05:00:00 GMT");
         date_default_timezone_set("Africa/Nairobi");
         header('Access-Control-Allow-Origin: *');
-
     }
 
     public function index()
     {
+        if (!isset($_GET['shop'])) {
+            $this->load->view('home');
+        } else {
+            if (!isset($_GET['hmac'])) {
+                echo '<script>window.location.href = "https://' . $_GET['shop'] . '/admin/apps";</script>';
+            }
 
-        if (isset($_GET['hmac'])) {
+            $this_shop = str_replace(".myshopify.com", "", $_GET['shop']);
+
+            if (!$this->db->table_exists('shops')) {
+                echo '<script>window.location.href = "' . base_url() . 'install?shop=' . $this_shop . '";</script>';
+            }
+
+            if ($this->db->where('shop', $this_shop)->get('shops')->num_rows() == 0) {
+                echo '<script>window.location.href = "' . base_url() . 'install?shop=' . $this_shop . '";</script>';
+            }
+
+            $shop_data = $this->db->where('shop', $this_shop)->get('shops')->row();
+
+            if ($shop_data->type == '') {
+                echo '<script>window.location.href = "' . base_url() . 'install?' . $_SERVER['QUERY_STRING'] . '";</script>';
+            }
+
             $requests = $_GET;
             $hmac = $_GET['hmac'];
             $serializeArray = serialize($requests);
             $requests = array_diff_key($requests, array('hmac' => ''));
             ksort($requests);
-        }
-        if (!isset($_GET['shop'])) {
-            die('stop');
-        }
 
-        $this_shop = str_replace(".myshopify.com", "", $_GET['shop']);
+            $token = $shop_data->token;
+            $shop = $shop_data->shop;
 
-        if ($this->db->table_exists('shops')) {
 
-        } else {
-            echo '<script>window.location.href = "'.base_url().'install?shop=' . $this_shop . '";</script>';
-        }
+            $this_script = '/admin/api/2020-04/script_tags.json';
+            $script_tags_url = "/admin/api/2020-04/script_tags.json";
 
-        if ($this->db->where('shop', $this_shop)->get('shops')->num_rows() == 0) {
-            echo '<script>window.location.href = "'.base_url().'install?shop=' . $this_shop . '";</script>';
-        }
+            $script_exists = $this->Shopify->shopify_call($token, $shop, $this_script, array('fields' => 'id,src,event,created_at,updated_at,'), 'GET');
+            $script_exists = json_decode($script_exists['response'], true);
 
-        $shop_data = $this->db->where('shop', $this_shop)->get('shops')->row();
-
-        $token = $shop_data->token;
-        $shop = $shop_data->shop;
-        $this_script = '/admin/api/2020-04/script_tags.json';
-        $script_tags_url = "/admin/api/2020-04/script_tags.json";
-
-        $script_exists = $this->Shopify->shopify_call($token, $this_shop, $this_script, array('fields' => 'id,src,event,created_at,updated_at,'), 'GET');
-        $script_exists = json_decode($script_exists['response'], true);
-
-        if (!isset($script_exists['script_tags'])) {
-            echo '<script>window.location.href = "'.base_url().'install?shop=' . $this_shop . '";</script>';
-        }
-        // CREATE NEW SCRIPT TAG
-        if (count($script_exists['script_tags']) == 0) {
-            $script_array = array(
-                'script_tag' => array(
-                    'event' => 'onload',
-                    'src' => base_url().'assets/js/shopify.js',
-                ),
-            );
-
-            $scriptTag = $this->Shopify->shopify_call($token, $this_shop, $script_tags_url, $script_array, 'POST');
-            $scriptTag = json_decode($scriptTag['response'], JSON_PRETTY_PRINT);
-        } else {
-            echo '<script>console.log(' . json_encode($script_exists) . ');</script>';
-        }
-
-        // REMOVE OLD SCRIPT TAGS
-        if (count($script_exists['script_tags']) > 1) {
-            foreach ($script_exists['script_tags'] as $key => $fetch) {
-                $delete_script = $this->Shopify->shopify_call($token, $this_shop, '/admin/api/2020-04/script_tags/' . $fetch['id'] . '.json', array('fields' => 'id,src,event,created_at,updated_at,'), 'DELETE');
-                $delete_script = json_decode($delete_script['response'], true);
-                echo '<script>console.log(' . json_encode($delete_script) . ');</script>';
+            if (count($script_exists['script_tags']) == 0) {
+                $data['do_script'] = "add";
+            } else {
+                $data['do_script'] = "remove";
             }
 
-            $script_array = array(
-                'script_tag' => array(
-                    'event' => 'onload',
-                    'src' => base_url().'assets/js/shopify.js',
-                ),
-            );
+            if ($this->db->where('shop', $shop)->get('offers')->num_rows() > 0) {
+                $offers = $this->db->where('shop', $shop)->get('offers')->result_array();
+                foreach ($offers as $key => $value) {
+                    $oid = $value['offer_id'];
+                    $data['offer'][$oid]['offer'] = $this->db->where('offer_id', $oid)->get('offers')->result_array();
+                    $data['offer'][$oid]['products'] = $this->db->where('offer', $oid)->get('products')->result_array();
+                    $data['offer'][$oid]['variants'] = $this->db->where('oid', $oid)->get('variants')->result_array();
+                    $data['offer'][$oid]['blocks'] = $this->db->where('oid', $oid)->get('cbs')->result_array();
+                    $data['offer'][$oid]['conditions'] = $this->db->where('oid', $oid)->get('ocs')->result_array();
+                    $data['offer'][$oid]['fields'] = $this->db->where('oid', $oid)->get('cfs')->result_array();
+                    $data['offer'][$oid]['choices'] = $this->db->where('oid', $oid)->get('choices')->result_array();
+                }
+            } else {
+                $data['offer'] = array();
 
-            $scriptTag = $this->Shopify->shopify_call($token, $this_shop, $script_tags_url, $script_array, 'POST');
-            $scriptTag = json_decode($scriptTag['response'], JSON_PRETTY_PRINT);
+                $s_mail = $this->Shopify->shopify_call($token, $shop, '/admin/api/2020-04/shop.json', array('fields' => 'email'), 'GET');
+                $s_mail = json_decode($s_mail['response'], true);
+
+                $data['email'] = $s_mail['shop']['email'];
+                if ($shop_data->created_at == '') {
+                }
+            }
+
+
+            $products = $this->Shopify->shopify_call($token, $this_shop, "/admin/api/2020-04/products.json", array('fields' => 'id,title,variants'), 'GET');
+            $params['products'] = json_decode($products['response'], true);
+
+            $data['options'] = $this->db->where('shop', $shop)->get('options')->result_array();
+            $data['shop'] = $shop;
+            $data['token'] = $token;
+            $data['products'] = $params['products']['products'];
+            $data['page_name'] = 'dashboard';
+            $this->load->view('index', $data);
         }
-        
-
-        $products = $this->Shopify->shopify_call($token, $this_shop, "/admin/api/2020-04/products.json", array('fields' => 'id,title,variants'), 'GET');
-        $params['products'] = json_decode($products['response'], true);
-
-        $data['options'] = $this->db->where('shop', $shop)->get('options')->result_array();
-        $data['shop'] = $shop;
-        $data['token'] = $token;
-        $data['products'] = $params['products']['products'];
-        $data['page_name'] = 'dashboard';
-        $this->load->view('index', $data);
     }
 
     public function generate_token()
@@ -190,7 +187,6 @@ class Slade extends CI_Controller
                 $this->db->insert('shops', $shop_data);
             }
             echo '<script>window.location.href = "https://' . $params['shop'] . '/admin/apps/sleek-options";</script>';
-
         } else {
             // Someone is trying to be shady!
             header("Location: http://ebonymgp.com");
@@ -247,9 +243,9 @@ class Slade extends CI_Controller
 
         $data['currency'] = $currency['shop']['currency'];
 
-        if ($this->db->where('product_id', $product)->get('options')->num_rows() == 0){
+        if ($this->db->where('product_id', $product)->get('options')->num_rows() == 0) {
             $data['options'] = array();
-        }else{
+        } else {
             $options = $this->db->where('shop', $shop)->where('product_id', $product)->get('options')->row();
             $data['options'] = json_decode($options->product_options, true);
         }
@@ -266,7 +262,7 @@ class Slade extends CI_Controller
         $shop = $_GET['shop'];
         $api_key = $this->config->item('shopify_api_key');
         $scopes = "read_orders,write_orders,read_draft_orders,read_content,write_content,read_products,write_products,read_product_listings,read_customers,write_customers,read_inventory,write_inventory,read_locations,read_script_tags,write_script_tags,read_themes,write_themes,read_shipping,write_shipping,read_analytics,read_checkouts,write_checkouts,read_reports,write_reports,read_price_rules,write_price_rules,read_discounts,write_discounts,read_resource_feedbacks,write_resource_feedbacks,read_translations,write_translations,read_locales,write_locales";
-        $redirect_uri = base_url()."generate_token";
+        $redirect_uri = base_url() . "generate_token";
 
         // Build install/approval URL to redirect to
         $install_url = "https://" . $shop . ".myshopify.com/admin/oauth/authorize?client_id=" . $api_key . "&scope=" . $scopes . "&redirect_uri=" . urlencode($redirect_uri);
@@ -391,7 +387,6 @@ class Slade extends CI_Controller
         $token = $this->input->post('token'); //replace with your access token
 
         if ($search_term == "") {
-
         } else {
             $array = array(
                 'limit' => '10',
@@ -466,20 +461,19 @@ class Slade extends CI_Controller
 
         print_r($option_data);
 
-        if ($this->db->where('product_id', $product_id)->get('options')->num_rows() == 0){
+        if ($this->db->where('product_id', $product_id)->get('options')->num_rows() == 0) {
             if ($this->db->insert('options', $option_data)) {
                 echo 'Success';
             } else {
                 echo 'Couldn\'t add option to db';
             }
-        }else{
+        } else {
             if ($this->db->set($option_data)->where('product_id', $product_id)->update('options')) {
                 echo 'Success';
             } else {
                 echo 'Couldn\'t add option to db';
             }
         }
-
     }
 
     public function new_table()
@@ -509,5 +503,4 @@ class Slade extends CI_Controller
         $data['page_name'] = "ole";
         $this->load->view('index', $data);
     }
-
 }

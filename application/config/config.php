@@ -23,7 +23,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | a PHP script and you can easily do that on your own.
 |
 */
-$config['base_url'] = 'https://sleek-options.herokuapp.com/';
+$config['base_url'] = 'https://localhost/sleekoptions/';
 
 /*
 |--------------------------------------------------------------------------
@@ -522,6 +522,6 @@ $config['rewrite_short_tags'] = FALSE;
 */
 $config['proxy_ips'] = '';
 
-$config['shopify_api_key'] = 'ff6d6777194963e955dda6b8847ec6ed';
-$config['shopify_secret'] = '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';
+$config['shopify_api_key'] = '5c1a46669eb1dd32f2190622853f42fa';
+$config['shopify_secret'] = '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';
 $config['redirect_url'] = '/generate_token';
