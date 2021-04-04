@@ -21,7 +21,7 @@
 			</tr>
 		</thead>
 		<tbod>
-            <?php foreach($products as $key => $fetch): ?>
+            <?php print_r($products); foreach($products as $key => $fetch): ?>
 			<tr>
 				<td>
                     <a style="color: #333333; text-decoration: none;" href="<?php echo base_url(); ?>edit_options/<?php echo $fetch['title']; ?>/<?php echo $fetch['id']; ?>/<?php echo $shop; ?>/<?php echo $token ?>">

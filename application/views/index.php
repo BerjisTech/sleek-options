@@ -54,15 +54,6 @@
         </div>
     </div>
 
-    <div class="footer">
-        <div class="row" style="margin: 0px;">
-            <div class="col-xs-12">
-                <a href="<?php echo base_url(); ?>ole/<?php echo $shop; ?>/<?php echo $token; ?>"><span
-                    class="btn btn-success btn-sm btn-icon icon-right"> <i class="entypo-plus"></i>Ole</span></a>
-            </div>
-        </div>
-    </div>
-
     <style>
     .footer {
         position: fixed;

@@ -63,20 +63,10 @@ class Slade extends CI_Controller
                 $data['do_script'] = "remove";
             }
 
-            if ($this->db->where('shop', $shop)->get('offers')->num_rows() > 0) {
-                $offers = $this->db->where('shop', $shop)->get('offers')->result_array();
-                foreach ($offers as $key => $value) {
-                    $oid = $value['offer_id'];
-                    $data['offer'][$oid]['offer'] = $this->db->where('offer_id', $oid)->get('offers')->result_array();
-                    $data['offer'][$oid]['products'] = $this->db->where('offer', $oid)->get('products')->result_array();
-                    $data['offer'][$oid]['variants'] = $this->db->where('oid', $oid)->get('variants')->result_array();
-                    $data['offer'][$oid]['blocks'] = $this->db->where('oid', $oid)->get('cbs')->result_array();
-                    $data['offer'][$oid]['conditions'] = $this->db->where('oid', $oid)->get('ocs')->result_array();
-                    $data['offer'][$oid]['fields'] = $this->db->where('oid', $oid)->get('cfs')->result_array();
-                    $data['offer'][$oid]['choices'] = $this->db->where('oid', $oid)->get('choices')->result_array();
-                }
+            if ($this->db->where('shop', $shop)->get('options')->num_rows() > 0) {
+                $data['options'] = $this->db->where('shop', $shop)->get('options')->result_array();
             } else {
-                $data['offer'] = array();
+                $data['options'] = array();
 
                 $s_mail = $this->Shopify->shopify_call($token, $shop, '/admin/api/2020-04/shop.json', array('fields' => 'email'), 'GET');
                 $s_mail = json_decode($s_mail['response'], true);
@@ -90,7 +80,7 @@ class Slade extends CI_Controller
             $products = $this->Shopify->shopify_call($token, $this_shop, "/admin/api/2020-04/products.json", array('fields' => 'id,title,variants'), 'GET');
             $params['products'] = json_decode($products['response'], true);
 
-            $data['options'] = $this->db->where('shop', $shop)->get('options')->result_array();
+
             $data['shop'] = $shop;
             $data['token'] = $token;
             $data['products'] = $params['products']['products'];
@@ -143,19 +133,31 @@ class Slade extends CI_Controller
 
             $shop = str_replace(".myshopify.com", "", $params['shop']);
 
-            $shop_data = array(
-                'shop' => $shop,
-                'token' => $access_token,
-                'date' => time(),
-            );
-
             if ($this->db->table_exists('shops')) {
                 if ($this->db->where('shop', $shop)->get('shops')->num_rows() == 0) {
+                    $shop_data = array(
+                        'shop_id' => ($this->db->order_by('shop_id', 'DESC')->limit('1')->get('shops')->row()->shop_id + 1),
+                        'shop' => $shop,
+                        'token' => $access_token,
+                        'date' => time(),
+                    );
                     $this->db->insert('shops', $shop_data);
                 } else {
-                    $this->db->where('shop', $shop)->update('shops', array('token' => $access_token, 'date' => time()));
+                    $shop_data = array(
+                        'shop_id' => '',
+                        'shop' => $shop,
+                        'token' => $access_token,
+                        'updated_at' => time(),
+                    );
+                    $this->db->where('shop', $shop)->update('shops', array('token' => $access_token, 'updated_at' => time()));
                 }
             } else {
+                $shop_data = array(
+                    'shop_id' => ($this->db->order_by('shop_id', 'DESC')->limit('1')->get('shops')->row()->shop_id + 1),
+                    'shop' => $shop,
+                    'token' => $access_token,
+                    'date' => time(),
+                );
                 $this->load->dbforge();
                 $fields = array(
                     'shop_id' => array(
@@ -186,12 +188,109 @@ class Slade extends CI_Controller
 
                 $this->db->insert('shops', $shop_data);
             }
-            echo '<script>window.location.href = "https://' . $params['shop'] . '/admin/apps/sleek-options";</script>';
+            echo '<script>window.location.href = "' . base_url() . 'start?t=false&' . $_SERVER['QUERY_STRING'] . '";</script>';
         } else {
             // Someone is trying to be shady!
-            header("Location: http://ebonymgp.com");
+            header("Location: https://sleekupsell.com/");
             die('This request is NOT from Shopify!');
         }
+    }
+
+    public function start()
+    {
+
+        $shop = str_replace(".myshopify.com", "", $_GET['shop']);
+        $token = $this->db->where('shop', $shop)->get('shops')->row()->token;
+
+        $s_data = $this->Shopify->shopify_call($token, $shop, '/admin/api/2020-04/shop.json', array(), 'GET');
+        $s_data = json_decode($s_data['response'], true);
+        $s_data = $s_data['shop'];
+
+        $active_shop = array(
+            'plan_name' => $s_data['plan_name'],
+            'shop_owner' => $s_data['shop_owner'],
+            'plan_display_name' => $s_data['plan_display_name'],
+            'customer_email' => $s_data['customer_email'],
+            'domain' => $s_data['domain'],
+            'partner' => $s_data['id'],
+            'type' => 'FREE',
+            'name' => 'FREE',
+            'price' => 0.0,
+            'bill_interval' => 'FOREVER',
+            'capped_amount' => 0.0,
+            'terms' => 'NO_TERMS',
+            'trial_days' => '30',
+            'test' => $_GET['t'],
+            'on_install' => 1,
+            'created_at' => '',
+            'updated_at' => time(),
+
+        );
+        $this->db->where('shop', str_replace(".myshopify.com", "", $_GET['shop']))->set($active_shop)->update('shops');
+
+        // SCRIPT TAGS
+        $this_script = '/admin/api/2020-04/script_tags.json';
+        $script_tags_url = "/admin/api/2020-04/script_tags.json";
+
+        $script_exists = $this->Shopify->shopify_call($token, $shop, $this_script, array('fields' => 'id,src,event,created_at,updated_at,'), 'GET');
+        $script_exists = json_decode($script_exists['response'], true);
+
+        // CREATE NEW SCRIPT TAG
+        if (count($script_exists['script_tags']) == 0) {
+            $script_array = array(
+                'sleek_upsell' => array(
+                    'event' => 'onload',
+                    'src' => base_url() . 'assets/js/shopify.js',
+                    'display_scope' => 'all'
+                ),
+            );
+
+            $scriptTag = $this->Shopify->shopify_call($token, $shop, $script_tags_url, $script_array, 'POST');
+            $scriptTag = json_decode($scriptTag['response'], JSON_PRETTY_PRINT);
+        } else {
+            echo '<script>console.log(' . json_encode($script_exists) . ');</script>';
+        }
+
+        // REMOVE OLD SCRIPT TAGS
+        if (count($script_exists['script_tags']) > 1) {
+            foreach ($script_exists['script_tags'] as $key => $fetch) {
+                $delete_script = $this->Shopify->shopify_call($token, $shop, '/admin/api/2020-04/script_tags/' . $fetch['id'] . '.json', array('fields' => 'id,src,event,created_at,updated_at,'), 'DELETE');
+                $delete_script = json_decode($delete_script['response'], true);
+                echo '<script>console.log(' . json_encode($delete_script) . ');</script>';
+            }
+            $script_array = array(
+                'sleek_upsell' => array(
+                    'event' => 'onload',
+                    'src' => base_url() . 'assets/js/shopify.js',
+                    'display_scope' => 'all'
+                ),
+            );
+
+            $scriptTag = $this->Shopify->shopify_call($token, $shop, $script_tags_url, $script_array, 'POST');
+            $scriptTag = json_decode($scriptTag['response'], JSON_PRETTY_PRINT);
+
+            $w_array = array(
+                'webhook' => array(
+                    'topic' => 'app/uninstalled',
+                    'address' => 'https://sleekupsell.com/d?shop=' . $_GET['shop'],
+                    'format' => 'json'
+                )
+            );
+
+            $webhook = $this->Shopify->shopify_call($token, $shop, "/admin/api/2020-07/webhooks.json", $w_array, 'POST');
+            $webhook = json_decode($webhook['response'], JSON_PRETTY_PRINT);
+        }
+
+        $this->Shopify->do_email(
+            $s_data['shop_owner'] . ' just installed Sleek Apps on ' . $s_data['domain'] . '<br /> Email: ' . $s_data['customer_email'],
+            'New User',
+            'sleek.apps.data@gmail.com',
+            'support@sleekupsell.com'
+        );
+
+        $this->Shopify->welcome_email($s_data['customer_email']);
+
+        echo '<script>top.window.location="https://' . $_GET['shop'] . '/admin/apps/sleek-options?' . $_SERVER['QUERY_STRING'] . '";</script>';
     }
 
     public function api_call_write_products()
@@ -227,6 +326,251 @@ class Slade extends CI_Controller
         $modified_product_response = $modified_product['response'];
     }
 
+    public function install()
+    {
+        if (isset($_GET['shop'])) :
+            $shop = $_GET['shop'];
+            $shop = str_replace(".myshopify.com", "", $shop);
+            $shop = str_replace("https://", "", $shop);
+            $shop = str_replace("http://", "", $shop);
+            $shop = str_replace("/", "", $shop);
+        elseif (isset($_POST['shop'])) :
+            $shop = $_POST['shop'];
+            $shop = str_replace(".myshopify.com", "", $shop);
+            $shop = str_replace("https://", "", $shop);
+            $shop = str_replace("http://", "", $shop);
+            $shop = str_replace("/", "", $shop);
+        endif;
+        $api_key = $this->config->item('shopify_api_key');
+        $scopes = "read_orders,read_draft_orders,read_products,read_product_listings,read_inventory,read_script_tags,write_script_tags,read_themes,write_themes,read_checkouts,read_price_rules,read_discounts";
+        $redirect_uri = base_url() . "generate_token";
+
+        // Build install/approval URL to redirect to
+        $install_url = "https://" . $shop . ".myshopify.com/admin/oauth/authorize?client_id=" . $api_key . "&scope=" . $scopes . "&redirect_uri=" . urlencode($redirect_uri);
+        // Redirect
+        header("Location: " . $install_url);
+        die();
+    }
+
+    public function upgrade($shop, $token, $plan)
+    {
+        $requests = $_GET;
+        $requests = array_diff_key($requests, array('hmac' => ''));
+        ksort($requests);
+
+        $shop = str_replace(".myshopify.com", "", $_GET['shop']);
+        $token = $this->db->where('shop', $shop)->get('shops')->row()->token;
+
+
+        $s_data = $this->Shopify->shopify_call($token, $shop, '/admin/api/2020-04/shop.json', array(), 'GET');
+        $s_data = json_decode($s_data['response'], true);
+        $s_data = $s_data['shop'];
+
+        $s_array = array(
+            'plan_name' => $s_data['plan_name'],
+            'shop_owner' => $s_data['shop_owner'],
+            'plan_display_name' => $s_data['plan_display_name'],
+            'customer_email' => $s_data['customer_email'],
+            'domain' => $s_data['domain'],
+            'partner' => $s_data['id']
+        );
+
+        $this->db->where('shop', $shop)->set($s_array)->update('shops');
+
+        if ($plan == 'Free') {
+            $this_script = '/admin/api/2020-04/recurring_application_charges.json';
+
+            $script_exists = $this->Shopify->shopify_call($token, $shop, $this_script, array(), 'GET');
+            $script_exists = json_decode($script_exists['response'], true);
+
+            foreach ($script_exists['recurring_application_charges'] as $key => $fetch) :
+                $del_url = '/admin/api/2020-04/recurring_application_charges/' . $fetch['id'] . '.json';
+                $del = $this->Shopify->shopify_call($token, $shop, $del_url, array(), 'DELETE');
+                $del = json_decode($del['response'], true);
+            endforeach;
+
+            $active_shop = array(
+                'type' => 'FREE',
+                'name' => $plan,
+                'price' => 0.00,
+                'bill_interval' => 'NEVER',
+                'capped_amount' => 0.00,
+                'terms' => 'NO_TERMS',
+                'trial_days' => '0',
+                'test' => 'false',
+                'on_install' => 1,
+                'created_at' => '',
+                'updated_at' => time(),
+
+            );
+
+            $this->db->where('shop', str_replace(".myshopify.com", "", $_GET['shop']))->set($active_shop)->update('shops');
+            $this->db->where('shop', $shop)->set('status', 0)->update('options');
+
+            echo '<script>top.window.location="https://' . $_GET['shop'] . '/admin/apps/sleek-options?' . $_SERVER['QUERY_STRING'] . '";</script>';
+            exit();
+        } else {
+            if ($plan == 'Sleek') {
+                $array = array(
+                    'recurring_application_charge' => array(
+                        'name' => 'Sleek',
+                        'test' => false,
+                        'price' => 19.99,
+                        'trial_days' => 7,
+                        'return_url' => 'https://' . $_GET['shop'] . '/admin/apps/sleek-options/activate/Sleek?t=false&hmac=' . $_GET['hmac'] . '&shop=' . $_GET['shop'],
+                    ),
+                );
+            }
+            if ($plan == 'Premium' && $shop == 'sleek-options-live') {
+                $array = array(
+                    'recurring_application_charge' => array(
+                        'name' => 'Premium',
+                        'test' => true,
+                        'price' => 59.99,
+                        'trial_days' => 7,
+                        'return_url' => 'https://' . $_GET['shop'] . '/admin/apps/sleek-options/activate/Premium?t=false&hmac=' . $_GET['hmac'] . '&shop=' . $_GET['shop'],
+                    ),
+                );
+            }
+            if ($plan == 'Premium' && $shop != 'sleek-options-live') {
+                $array = array(
+                    'recurring_application_charge' => array(
+                        'name' => 'Premium',
+                        'test' => false,
+                        'price' => 59.99,
+                        'trial_days' => 7,
+                        'return_url' => 'https://' . $_GET['shop'] . '/admin/apps/sleek-options/activate/Premium?t=false&hmac=' . $_GET['hmac'] . '&shop=' . $_GET['shop'],
+                    ),
+                );
+            }
+
+            $charge = $this->Shopify->shopify_call($token, $shop, "/admin/api/2020-04/recurring_application_charges.json", $array, 'POST');
+            $charge = json_decode($charge['response'], JSON_PRETTY_PRINT);
+
+            echo '<script>top.window.location="' . $charge['recurring_application_charge']['confirmation_url'] . '";</script>';
+            exit();
+        }
+    }
+
+    public function activate($plan)
+    {
+        $requests = $_GET;
+        $requests = array_diff_key($requests, array('hmac' => ''));
+        ksort($requests);
+
+        $shop = str_replace(".myshopify.com", "", $_GET['shop']);
+        $token = $this->db->where('shop', $shop)->get('shops')->row()->token;
+
+        if (isset($_GET['charge_id']) && $_GET['charge_id'] != '') {
+            $charge_id = $_GET['charge_id'];
+
+
+            $array = array(
+                'recurring_application_charge' => array(
+                    'id' => $charge_id,
+                    'name' => $plan,
+                    'api_client_id' => time(),
+                    'price' => '19.99',
+                    'status' => 'accepted',
+                    'return_url' => 'https://' . $_GET['shop'] . '/admin/apps/sleek-options',
+                    'billing_on' => null,
+                    'test' => $_GET['t'],
+                    'activated_on' => null,
+                    'trial_ends_on' => null,
+                    'cancelled_on' => null,
+                    'trial_days' => 30,
+                    'decorated_return_url' => 'https://' . $_GET['shop'] . '/admin/apps/sleek-options?charge_id=' . $charge_id,
+                ),
+            );
+
+            $activate = $this->Shopify->shopify_call($token, $shop, "/admin/api/2020-04/recurring_application_charges/" . $charge_id . "/activate.json", $array, 'POST');
+            $activate = json_decode($activate['response'], JSON_PRETTY_PRINT);
+
+
+            $active_shop = array(
+                'type' => 'RECURRING',
+                'name' => $plan,
+                'price' => 19.99,
+                'bill_interval' => 'EVERY_30_DAYS',
+                'capped_amount' => 19.99,
+                'terms' => 'NO_TERMS',
+                'trial_days' => '30',
+                'test' => $_GET['t'],
+                'on_install' => 1,
+                'created_at' => '',
+                'updated_at' => time(),
+
+            );
+            $this->db->where('shop', str_replace(".myshopify.com", "", $_GET['shop']))->set($active_shop)->update('shops');
+
+            $this_script = '/admin/api/2020-04/recurring_application_charges.json';
+
+            $script_exists = $this->Shopify->shopify_call($token, $shop, $this_script, array(), 'GET');
+            $script_exists = json_decode($script_exists['response'], true);
+
+            foreach ($script_exists['recurring_application_charges'] as $key => $fetch) :
+                if ($fetch['id'] != $charge_id) {
+                    $del_url = '/admin/api/2020-04/recurring_application_charges/' . $fetch['id'] . '.json';
+                    $del = $this->Shopify->shopify_call($token, $shop, $del_url, array(), 'DELETE');
+                    $del = json_decode($del['response'], true);
+                }
+
+            endforeach;
+
+            echo '<script>top.window.location="' . $array['recurring_application_charge']['decorated_return_url'] . '";</script>';
+        }
+    }
+
+    public function add_tag($shop, $token)
+    {
+        // SCRIPT TAGS
+        $this_script = '/admin/api/2020-04/script_tags.json';
+        $script_tags_url = "/admin/api/2020-04/script_tags.json";
+
+        $script_exists = $this->Shopify->shopify_call($token, $shop, $this_script, array('fields' => 'id,src,event,created_at,updated_at,'), 'GET');
+        $script_exists = json_decode($script_exists['response'], true);
+
+        foreach ($script_exists['script_tags'] as $key => $fetch) {
+            $delete_script = $this->Shopify->shopify_call($token, $shop, '/admin/api/2020-04/script_tags/' . $fetch['id'] . '.json', array('fields' => 'id,src,event,created_at,updated_at,'), 'DELETE');
+            $delete_script = json_decode($delete_script['response'], true);
+            echo '<script>console.log(' . json_encode($delete_script) . ');</script>';
+        }
+        $script_array = array(
+            'script_tag' => array(
+                'event' => 'onload',
+                'src' => base_url() . 'assets/js/shopify.js',
+                'display_scope' => 'all'
+            ),
+        );
+
+        $scriptTag = $this->Shopify->shopify_call($token, $shop, $script_tags_url, $script_array, 'POST');
+        $scriptTag = json_decode($scriptTag['response'], JSON_PRETTY_PRINT);
+
+        echo 'Automatic script tag succesfully added';
+    }
+
+    public function remove_tag($shop, $token)
+    {
+        // SCRIPT TAGS
+        $this_script = '/admin/api/2020-04/script_tags.json';
+        $script_tags_url = "/admin/api/2020-04/script_tags.json";
+
+        $script_exists = $this->Shopify->shopify_call($token, $shop, $this_script, array('fields' => 'id,src,event,created_at,updated_at,'), 'GET');
+        $script_exists = json_decode($script_exists['response'], true);
+
+        // REMOVE OLD SCRIPT TAGS
+        foreach ($script_exists['script_tags'] as $key => $fetch) {
+            $delete_script = $this->Shopify->shopify_call($token, $shop, '/admin/api/2020-04/script_tags/' . $fetch['id'] . '.json', array('fields' => 'id,src,event,created_at,updated_at,'), 'DELETE');
+            $delete_script = json_decode($delete_script['response'], true);
+        }
+        echo 'Automatic script tag succesfully removed';
+    }
+
+    public function get_app()
+    {
+        echo '<!DOCTYPE html><html lang="en"><head> <title>Sleek Upsell — Installation</title> <meta http-equiv="x-ua-compatible" content="ie=edge"> <meta name="viewport" content="width=device-width, initial-scale=1"> <style>*{-moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box;}body{padding: 2.5em 0; color: #212b37; font-family: -apple-system,BlinkMacSystemFont,San Francisco,Roboto,Segoe UI,Helvetica Neue,sans-serif;}.container{width: 100%; text-align: center; margin-left: auto; margin-right: auto;}@media screen and (min-width: 510px){.container{width: 510px;}}.title{font-size: 1.5em; margin: 2em auto; display: flex; align-items: center; justify-content: center; word-break: break-all;}.subtitle{font-size: 0.8em; font-weight: 500; color: #64737f; line-height: 2em;}.error{line-height: 1em; padding: 0.5em; color: red;}input.marketing-input{width: 100%; height: 52px; padding: 0 15px; box-shadow: 0 0 0 1px #ddd; border: 0; border-radius: 5px; background-color: #fff; font-size: 1em; margin-bottom: 15px;}input.marketing-input:focus{color: #000; outline: 0; box-shadow: 0 0 0 2px #5e6ebf;}button.marketing-button{display: inline-block; width: 100%; padding: 1.0625em 1.875em; background-color: #5e6ebf; color: #fff; font-weight: 700; font-size: 1em; text-align: center; outline: none; border: 0 solid transparent; border-radius: 5px; cursor: pointer;}button.marketing-button:hover{background: linear-gradient(to bottom, #5c6ac4, #4959bd); border-color: #3f4eae;}button.marketing-button:focus{box-shadow: 0 0 0.1875em 0.1875em rgba(94,110,191,0.5); background-color: #223274; color: #fff;}</style></head><body> <main class="container" role="main"> <h3 class="title"> Sleek Upsell </h3> <p class="subtitle"> <label for="shop">Enter your shop domain to log in or install this app.</label> </p><form action="' . base_url('install') . '" accept-charset="UTF-8" method="post"><input type="hidden" name="authenticity_token" value="' . sha1(md5('nehN7kwK9YR++yH5VIG2I0C2wMNMYReLqtJAuhRimoqM3wmzPwV24KDKaOy1aGnKPBYeWoiDOuldhtvdcA73Ww==')) . '"/> <input id="shop" name="shop" type="text" autofocus="autofocus" placeholder="example.myshopify.com" class="marketing-input"> <button type="submit" class="marketing-button">Install</button></form> </main></body></html>';
+    }
+
     public function new_options($shop, $token)
     {
         $data['token'] = $token;
@@ -237,7 +581,6 @@ class Slade extends CI_Controller
 
     public function edit_options($title, $product, $shop, $token)
     {
-
         $currency = $this->Shopify->shopify_call($token, $shop, "/admin/api/2020-04/shop.json", array('fields' => 'currency'), 'GET');
         $currency = json_decode($currency['response'], true);
 
@@ -255,20 +598,6 @@ class Slade extends CI_Controller
         $data['title'] = $title;
         $data['page_name'] = "edit_options";
         $this->load->view('index', $data);
-    }
-
-    public function install()
-    {
-        $shop = $_GET['shop'];
-        $api_key = $this->config->item('shopify_api_key');
-        $scopes = "read_orders,write_orders,read_draft_orders,read_content,write_content,read_products,write_products,read_product_listings,read_customers,write_customers,read_inventory,write_inventory,read_locations,read_script_tags,write_script_tags,read_themes,write_themes,read_shipping,write_shipping,read_analytics,read_checkouts,write_checkouts,read_reports,write_reports,read_price_rules,write_price_rules,read_discounts,write_discounts,read_resource_feedbacks,write_resource_feedbacks,read_translations,write_translations,read_locales,write_locales";
-        $redirect_uri = base_url() . "generate_token";
-
-        // Build install/approval URL to redirect to
-        $install_url = "https://" . $shop . ".myshopify.com/admin/oauth/authorize?client_id=" . $api_key . "&scope=" . $scopes . "&redirect_uri=" . urlencode($redirect_uri);
-        // Redirect
-        header("Location: " . $install_url);
-        die();
     }
 
     public function options($shop, $product)
@@ -494,13 +823,5 @@ class Slade extends CI_Controller
             $this->db->query('COMMIT;');
             echo 'table created';
         }
-    }
-
-    public function ole($shop, $token)
-    {
-        $data['token'] = $token;
-        $data['shop'] = $shop;
-        $data['page_name'] = "ole";
-        $this->load->view('index', $data);
     }
 }
