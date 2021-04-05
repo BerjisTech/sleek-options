@@ -587,8 +587,10 @@ class Slade extends CI_Controller
         $data['currency'] = $currency['shop']['currency'];
 
         if ($this->db->where('product_id', $product)->get('options')->num_rows() == 0) {
-            echo 'empty';
             $data['options'] = array();
+            $data['option'] = array();
+            $data['options'] = array();
+            $data['choices'] = array();
         } else {
             $option = $this->db->where('shop', $shop)->where('product_id', $product)->get('option')->row();
             $options = $this->db->where('shop', $shop)->where('pid', $product)->get('cfs')->row();
@@ -783,17 +785,15 @@ class Slade extends CI_Controller
     public function create_options($product_id, $shop)
     {
 
-        print_r($this->input->post());
         $option = $this->input->post('option');
         $options = $this->input->post('options');
         $choices = $this->input->post('choices');
 
-        print_r($options);
-        echo '<br /><br />';
-        print_r($choices);
+        print_r($option);
 
 
         if ($this->db->where('product_id', $product_id)->get('options')->num_rows() == 0) {
+            echo $option['product_id'];
             if ($this->db->insert('options', $option)) {
                 foreach ($options as $o) {
                     $this->db->set($o)->insert('cfs');
@@ -801,7 +801,7 @@ class Slade extends CI_Controller
                 foreach ($choices as $c) {
                     $this->db->set($c)->insert('choices');
                 }
-                echo 'Success';
+                echo 'Successful created options';
             } else {
                 echo 'Couldn\'t add option to db';
             }
@@ -817,7 +817,7 @@ class Slade extends CI_Controller
                     $this->db->where('pid', $product_id)->delete('choices');
                     $this->db->set($c)->insert('choices');
                 }
-                echo 'Success';
+                echo 'Successfully updated options';
             } else {
                 echo 'Couldn\'t add option to db';
             }
