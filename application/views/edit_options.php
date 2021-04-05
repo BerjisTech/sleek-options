@@ -1,5 +1,5 @@
 <script>
-    <?php if (sizeof($options) > 0) : ?>
+    <?php if (sizeof($option) > 0) : ?>
         var option = <?php echo json_encode($options); ?>;
     <?php else : ?>
         var option = {
@@ -11,8 +11,20 @@
             'status': '1'
         };
     <?php endif ?>
-    var options = [];
-    var choices = [];
+
+
+    <?php if (sizeof($options) > 0) : ?>
+        var options = <?php echo json_encode($options); ?>;
+    <?php else : ?>
+        var options = {};
+    <?php endif ?>
+
+
+    <?php if (sizeof($choices) > 0) : ?>
+        var choices = <?php echo json_encode($choices); ?>;
+    <?php else : ?>
+        var choices = {};
+    <?php endif ?>
 </script>
 <style>
     .form-control {
@@ -571,14 +583,16 @@
         options.updated = '<?php echo time(); ?>'
         $.ajax({
             type: "POST",
-            url: base_url + 'create_options?<?php echo $_SERVER['QUERY_STRING']; ?>',
+            url: base_url + 'create_options/' + option.product_id + '/' + option.shop + '?<?php echo $_SERVER['QUERY_STRING']; ?>',
             data: this_option,
             success: function(response) {
                 console.log(response)
                 // window.location.href = base_url + "edit_offer/<?php echo $shop; ?>/<?php echo $token ?>/" + response + '?<?php echo $_SERVER['QUERY_STRING']; ?>';
                 //$('.data').html(response);
             },
-            error: function() {
+            error: function(r) {
+                console.clear()
+                console.error(r)
                 alert('An error occured');
             }
         });

@@ -587,11 +587,18 @@ class Slade extends CI_Controller
         $data['currency'] = $currency['shop']['currency'];
 
         if ($this->db->where('product_id', $product)->get('options')->num_rows() == 0) {
+            echo 'empty';
             $data['options'] = array();
         } else {
-            $options = $this->db->where('shop', $shop)->where('product_id', $product)->get('options')->row();
-            $data['options'] = json_decode($options->product_options, true);
+            $option = $this->db->where('shop', $shop)->where('product_id', $product)->get('option')->row();
+            $options = $this->db->where('shop', $shop)->where('pid', $product)->get('cfs')->row();
+            $choices = $this->db->where('shop', $shop)->where('pid', $product)->get('choices')->row();
+
+            $data['option'] = json_decode($option->product_options, true);
+            $data['options'] = json_decode($options, true);
+            $data['choices'] = json_decode($choices, true);
         }
+
         $data['token'] = $token;
         $data['shop'] = $shop;
         $data['product'] = $product;
@@ -773,38 +780,48 @@ class Slade extends CI_Controller
         echo $html;
     }
 
-    public function create_options()
+    public function create_options($product_id, $shop)
     {
 
-        print_r($this->input->post('option'));
+        print_r($this->input->post());
+        $option = $this->input->post('option');
+        $options = $this->input->post('options');
+        $choices = $this->input->post('choices');
 
-        // $product_id = $_POST['product_id'];
-        // $product_options = $_POST['product_options'];
-        // $shop = $_POST['shop'];
-        // $option_date = $_POST['option_date'];
+        print_r($options);
+        echo '<br /><br />';
+        print_r($choices);
 
-        // $option_data = array(
-        //     'product_id' => $product_id,
-        //     'product_options' => $product_options,
-        //     'shop' => $shop,
-        //     'option_date' => $option_date
-        // );
 
-        // print_r($option_data);
-
-        // if ($this->db->where('product_id', $product_id)->get('options')->num_rows() == 0) {
-        //     if ($this->db->insert('options', $option_data)) {
-        //         echo 'Success';
-        //     } else {
-        //         echo 'Couldn\'t add option to db';
-        //     }
-        // } else {
-        //     if ($this->db->set($option_data)->where('product_id', $product_id)->update('options')) {
-        //         echo 'Success';
-        //     } else {
-        //         echo 'Couldn\'t add option to db';
-        //     }
-        // }
+        if ($this->db->where('product_id', $product_id)->get('options')->num_rows() == 0) {
+            if ($this->db->insert('options', $option)) {
+                foreach ($options as $o) {
+                    $this->db->set($o)->insert('cfs');
+                }
+                foreach ($choices as $c) {
+                    $this->db->set($c)->insert('choices');
+                }
+                echo 'Success';
+            } else {
+                echo 'Couldn\'t add option to db';
+            }
+        } else {
+            if (
+                $this->db->set($option)->where('product_id', $product_id)->update('options')
+            ) {
+                foreach ($options as $o) {
+                    $this->db->where('pid', $product_id)->update('cfs');
+                    $this->db->set($o)->insert('cfs');
+                }
+                foreach ($choices as $c) {
+                    $this->db->where('pid', $product_id)->delete('choices');
+                    $this->db->set($c)->insert('choices');
+                }
+                echo 'Success';
+            } else {
+                echo 'Couldn\'t add option to db';
+            }
+        }
     }
 
     public function new_table()
