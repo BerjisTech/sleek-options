@@ -509,7 +509,8 @@ $('.save_options').click(function(){
             alert(response);
             //$('.data').html(response);
         },
-        error: function() {
+        error: function(e) {
+            console.error(e)
             alert('An error occured');
         }
     });
