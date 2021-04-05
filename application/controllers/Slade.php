@@ -788,10 +788,10 @@ class Slade extends CI_Controller
         $options = $this->input->post('options');
         $choices = $this->input->post('choices');
 
-        foreach ($options as $o){
+        foreach ($options as $o) {
             print_r($o);
         }
-        foreach ($choices as $c){
+        foreach ($choices as $c) {
             print_r($c);
         }
 
@@ -811,12 +811,13 @@ class Slade extends CI_Controller
             }
         } else {
             if ($this->db->set($option)->where('product_id', $product_id)->update('options')) {
+                $this->db->where('pid', $product_id)->delete('cfs');
+                $this->db->where('pid', $product_id)->delete('choices');
+
                 foreach ($options as $o) {
-                    $this->db->where('pid', $product_id)->delete('cfs');
                     $this->db->set($o)->insert('cfs');
                 }
                 foreach ($choices as $c) {
-                    $this->db->where('pid', $product_id)->delete('choices');
                     $this->db->set($c)->insert('choices');
                 }
                 echo 'Successfully updated options';

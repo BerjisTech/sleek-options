@@ -42,10 +42,9 @@
 								<?php if ($this->db->where('shop', $shop)->where('product_id', $fetch['id'])->get('options')->num_rows() == 0) : ?>
 									<a href="<?php echo base_url(); ?>edit_options/<?php echo $fetch['title']; ?>/<?php echo $fetch['id']; ?>/<?php echo $shop; ?>/<?php echo $token ?>"><span class="btn btn-primary btn-sm btn-icon icon-left"> <i class="entypo-plus"></i>Create new options</span></a>
 								<?php else :
-									$options = $this->db->where('product_id', $fetch['id'])->get('options')->row();
-									$options_arr = json_decode($options->product_options, true);
+									$options = $this->db->where('pid', $fetch['id'])->get('cfs')->result_array();
 
-									foreach ($options_arr as $option) {
+									foreach ($options as $option) {
 										echo '<span class="btn btn-default">' . $option['name'] . '</span> ';
 									}
 								?>
