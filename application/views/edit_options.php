@@ -1,7 +1,6 @@
-<?php echo $product; ?>
 <script>
-    <?php if (sizeof($option) > 0) : ?>
-        var option = <?php echo json_encode($options); ?>;
+    <?php if (!empty($option)) : ?>
+        var option = <?php echo json_encode($option); ?>;
     <?php else : ?>
         var option = {
             'options_id': '',
@@ -14,14 +13,14 @@
     <?php endif ?>
 
 
-    <?php if (sizeof($options) > 0) : ?>
+    <?php if (!empty($options)) : ?>
         var options = <?php echo json_encode($options); ?>;
     <?php else : ?>
         var options = [];
     <?php endif ?>
 
 
-    <?php if (sizeof($choices) > 0) : ?>
+    <?php if (!empty($choices)) : ?>
         var choices = <?php echo json_encode($choices); ?>;
     <?php else : ?>
         var choices = [];

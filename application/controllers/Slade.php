@@ -587,18 +587,17 @@ class Slade extends CI_Controller
         $data['currency'] = $currency['shop']['currency'];
 
         if ($this->db->where('product_id', $product)->get('options')->num_rows() == 0) {
-            $data['options'] = array();
             $data['option'] = array();
             $data['options'] = array();
             $data['choices'] = array();
         } else {
-            $option = $this->db->where('shop', $shop)->where('product_id', $product)->get('option')->row();
-            $options = $this->db->where('shop', $shop)->where('pid', $product)->get('cfs')->row();
-            $choices = $this->db->where('shop', $shop)->where('pid', $product)->get('choices')->row();
+            $option = $this->db->where('shop', $shop)->where('product_id', $product)->get('options')->row();
+            $options = $this->db->where('pid', $product)->get('cfs')->result_array();
+            $choices = $this->db->where('pid', $product)->get('choices')->result_array();
 
-            $data['option'] = json_decode($option->product_options, true);
-            $data['options'] = json_decode($options, true);
-            $data['choices'] = json_decode($choices, true);
+            $data['option'] = $option;
+            $data['options'] = $options;
+            $data['choices'] = $choices;
         }
 
         $data['token'] = $token;
@@ -789,7 +788,12 @@ class Slade extends CI_Controller
         $options = $this->input->post('options');
         $choices = $this->input->post('choices');
 
-        print_r($option);
+        foreach ($options as $o){
+            print_r($o);
+        }
+        foreach ($choices as $c){
+            print_r($c);
+        }
 
 
         if ($this->db->where('product_id', $product_id)->get('options')->num_rows() == 0) {
@@ -806,11 +810,9 @@ class Slade extends CI_Controller
                 echo 'Couldn\'t add option to db';
             }
         } else {
-            if (
-                $this->db->set($option)->where('product_id', $product_id)->update('options')
-            ) {
+            if ($this->db->set($option)->where('product_id', $product_id)->update('options')) {
                 foreach ($options as $o) {
-                    $this->db->where('pid', $product_id)->update('cfs');
+                    $this->db->where('pid', $product_id)->delete('cfs');
                     $this->db->set($o)->insert('cfs');
                 }
                 foreach ($choices as $c) {
