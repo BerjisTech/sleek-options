@@ -824,4 +824,13 @@ class Slade extends CI_Controller
             echo 'table created';
         }
     }
+
+    public function subscription($shop, $token)
+    {
+        $data['token'] = $token;
+        $data['shop'] = $shop;
+
+        $data['page_name'] = 'subscription';
+        $this->load->view('index', $data);
+    }
 }

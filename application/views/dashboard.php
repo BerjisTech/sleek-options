@@ -2,9 +2,9 @@
 	<div class="flexible">
 		<img src="<?php echo base_url('logo.png'); ?>" style="width: 50px; margin-top: 20px; margin-bottom: 20px;" />
 
-		<a href="#"><span class="entypo-cog"></span> Settings</a>
+		<a href="settings/<?php echo $shop . '/' . $token; ?>??<?php echo $_SERVER['QUERY_STRING']; ?>"><span class="entypo-cog"></span> Settings</a>
 		<a href="#"><span class="entypo-feather"></span> Wizard</a>
-		<a href="#"><span class="entypo-credit-card"></span> Plan</a>
+		<a href="subscription/<?php echo $shop . '/' . $token; ?>??<?php echo $_SERVER['QUERY_STRING']; ?>"><span class="entypo-credit-card"></span> Plan</a>
 	</div>
 	<div class="spread">
 		<div class="row" style="background: #FFFFFF;">
