@@ -776,33 +776,35 @@ class Slade extends CI_Controller
     public function create_options()
     {
 
-        $product_id = $_POST['product_id'];
-        $product_options = $_POST['product_options'];
-        $shop = $_POST['shop'];
-        $option_date = $_POST['option_date'];
+        print_r($this->input->post('option'));
 
-        $option_data = array(
-            'product_id' => $product_id,
-            'product_options' => $product_options,
-            'shop' => $shop,
-            'option_date' => $option_date
-        );
+        // $product_id = $_POST['product_id'];
+        // $product_options = $_POST['product_options'];
+        // $shop = $_POST['shop'];
+        // $option_date = $_POST['option_date'];
 
-        print_r($option_data);
+        // $option_data = array(
+        //     'product_id' => $product_id,
+        //     'product_options' => $product_options,
+        //     'shop' => $shop,
+        //     'option_date' => $option_date
+        // );
 
-        if ($this->db->where('product_id', $product_id)->get('options')->num_rows() == 0) {
-            if ($this->db->insert('options', $option_data)) {
-                echo 'Success';
-            } else {
-                echo 'Couldn\'t add option to db';
-            }
-        } else {
-            if ($this->db->set($option_data)->where('product_id', $product_id)->update('options')) {
-                echo 'Success';
-            } else {
-                echo 'Couldn\'t add option to db';
-            }
-        }
+        // print_r($option_data);
+
+        // if ($this->db->where('product_id', $product_id)->get('options')->num_rows() == 0) {
+        //     if ($this->db->insert('options', $option_data)) {
+        //         echo 'Success';
+        //     } else {
+        //         echo 'Couldn\'t add option to db';
+        //     }
+        // } else {
+        //     if ($this->db->set($option_data)->where('product_id', $product_id)->update('options')) {
+        //         echo 'Success';
+        //     } else {
+        //         echo 'Couldn\'t add option to db';
+        //     }
+        // }
     }
 
     public function new_table()
