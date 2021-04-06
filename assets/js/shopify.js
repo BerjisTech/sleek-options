@@ -122,6 +122,7 @@ async function sleek_options() {
 
     function populateFields(pid, fields, choices) {
         console.log('populating fields')
+        $('form[action="/cart/add"]').prepend('<div class="sleek-options"></div><br />')
         fields.filter(f => f.pid == pid)
             .forEach(f =>
                 create_field(pid, f, f.type == 'select' ? choices.filter(c => c.fid == f.fid) : [])
@@ -162,8 +163,7 @@ async function sleek_options() {
 
     function ins_field(f_html, pid) {
         console.log('inserting fields')
-        console.log(f_html)
-        $(`form[action="/cart/add"]`).prepend(f_html);
+        $(`.sleek-options`).append(f_html);
     }
 
     function ins_opt_placeholder(name, label) {

@@ -874,4 +874,110 @@ class Slade extends CI_Controller
         $shop_j = str_replace('</span>', '', $shop_j);
         echo $shop_j;
     }
+
+    public function edit_theme($shop, $token)
+    {
+        $data['shop'] = $shop;
+        $data['token'] = $token;
+        $data['page_name'] = 'edit_theme';
+
+        $theme = $this->Shopify->shopify_call($token, $shop, "/admin/api/2020-04/themes.json", array(), 'GET');
+        $theme = json_decode($theme['response'], JSON_PRETTY_PRINT);
+
+        foreach ($theme as $cur_theme) {
+            foreach ($cur_theme as $key => $value) {
+                if ($value['role'] === 'main') {
+                    // echo "Theme ID: " . $value['id'] . "<br />";
+                    // echo "Theme Name: " . $value['name'] . "<br />";
+
+                    // $array = array(
+                    //     'asset' => array(
+                    //         'key' => 'snippets/sleek_options.liquid',
+                    //         'value' => $this->load->view('sleek_options', $data, TRUE)
+                    //     )
+                    // );
+
+                    // $assets = $this->Shopify->shopify_call($token, $shop, "/admin/api/2021-01/themes/" . $value['id'] . "/assets.json", $array, 'PUT');
+                    // $assets = json_decode($assets['response'], JSON_PRETTY_PRINT);
+                    // print_r($assets);
+
+                    $array = array(
+                        'asset' => array(
+                            'key' => 'templates/product.liquid',
+                            'value' => '{% include \'sleek_options\' %}'
+                        )
+                    );
+
+                    $assets = $this->Shopify->shopify_call($token, $shop, "/admin/api/2021-01/themes/" . $value['id'] . "/assets.json", $array, 'GET');
+                    $assets = json_decode($assets['response'], JSON_PRETTY_PRINT);
+                    $data['code'] = $assets['asset']['value'];
+                    // print_r($assets['asset']['value']);
+
+                    // $array = array(
+                    //     'asset' => array(
+                    //         'key' => 'templates/product.liquid',
+                    //         'value' => $assets['asset']['value'] . '{% include \'sleek_options\' %}'
+                    //     )
+                    // );
+
+                    // $assets = $this->Shopify->shopify_call($token, $shop, "/admin/api/2021-01/themes/" . $value['id'] . "/assets.json", $array, 'PUT');
+                    // $assets = json_decode($assets['response'], JSON_PRETTY_PRINT);
+                    // print_r($assets);
+                }
+            }
+        }
+        $this->load->view('index', $data);
+    }
+
+    public function add_sleek_option($shop, $token)
+    {
+        $data['shop'] = $shop;
+        $data['token'] = $token;
+        $data['page_name'] = 'dashboard';
+
+        $theme = $this->Shopify->shopify_call($token, $shop, "/admin/api/2020-04/themes.json", array(), 'GET');
+        $theme = json_decode($theme['response'], JSON_PRETTY_PRINT);
+
+        foreach ($theme as $cur_theme) {
+            foreach ($cur_theme as $key => $value) {
+                if ($value['role'] === 'main') {
+                    // echo "Theme ID: " . $value['id'] . "<br />";
+                    // echo "Theme Name: " . $value['name'] . "<br />";
+
+                    $array = array(
+                        'asset' => array(
+                            'key' => 'snippets/sleek_options.liquid',
+                            'value' => $this->load->view('sleek_options', $data, TRUE)
+                        )
+                    );
+
+                    $assets = $this->Shopify->shopify_call($token, $shop, "/admin/api/2021-01/themes/" . $value['id'] . "/assets.json", $array, 'PUT');
+                    $assets = json_decode($assets['response'], JSON_PRETTY_PRINT);
+                    // print_r($assets);
+
+                    $array = array(
+                        'asset' => array(
+                            'key' => 'templates/product.liquid',
+                            'value' => '{% include \'sleek_options\' %}'
+                        )
+                    );
+
+                    $assets = $this->Shopify->shopify_call($token, $shop, "/admin/api/2021-01/themes/" . $value['id'] . "/assets.json", $array, 'GET');
+                    $assets = json_decode($assets['response'], JSON_PRETTY_PRINT);
+                    // print_r($assets['asset']['value']);
+
+                    $array = array(
+                        'asset' => array(
+                            'key' => 'templates/product.liquid',
+                            'value' => $assets['asset']['value'] . '{% include \'sleek_options\' %}'
+                        )
+                    );
+
+                    $assets = $this->Shopify->shopify_call($token, $shop, "/admin/api/2021-01/themes/" . $value['id'] . "/assets.json", $array, 'PUT');
+                    $assets = json_decode($assets['response'], JSON_PRETTY_PRINT);
+                    print_r($assets);
+                }
+            }
+        }
+    }
 }

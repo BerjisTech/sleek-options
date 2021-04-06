@@ -5,6 +5,7 @@
 		<a href="settings/<?php echo $shop . '/' . $token; ?>?<?php echo $_SERVER['QUERY_STRING']; ?>"><span class="entypo-cog"></span> Settings</a>
 		<a href="#"><span class="entypo-feather"></span> Wizard</a>
 		<a href="subscription/<?php echo $shop . '/' . $token; ?>?<?php echo $_SERVER['QUERY_STRING']; ?>"><span class="entypo-credit-card"></span> Plan</a>
+		<a href="edit_theme/<?php echo $shop . '/' . $token; ?>?<?php echo $_SERVER['QUERY_STRING']; ?>"><span class="entypo-feather"></span> Plan</a>
 	</div>
 	<div class="spread">
 		<div class="row" style="background: #FFFFFF;">
