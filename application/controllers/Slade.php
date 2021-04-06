@@ -903,7 +903,7 @@ class Slade extends CI_Controller
 
                     $array = array(
                         'asset' => array(
-                            'key' => 'templates/product.liquid',
+                            'key' => 'sections/product-template.liquid',
                             'value' => '{% include \'sleek_options\' %}'
                         )
                     );
