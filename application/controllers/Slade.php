@@ -887,6 +887,7 @@ class Slade extends CI_Controller
         foreach ($theme as $cur_theme) {
             foreach ($cur_theme as $key => $value) {
                 if ($value['role'] === 'main') {
+                    $data['theme'] = $value['id'];
                     // echo "Theme ID: " . $value['id'] . "<br />";
                     // echo "Theme Name: " . $value['name'] . "<br />";
 
@@ -908,9 +909,10 @@ class Slade extends CI_Controller
                         )
                     );
 
-                    $assets = $this->Shopify->shopify_call($token, $shop, "/admin/api/2021-01/themes/" . $value['id'] . "/assets.json", $array, 'GET');
+                    $assets = $this->Shopify->shopify_call($token, $shop, "/admin/api/2021-01/themes/" . $value['id'] . "/assets.json", array(), 'GET');
                     $assets = json_decode($assets['response'], JSON_PRETTY_PRINT);
-                    $data['code'] = $assets['asset']['value'];
+                    // $data['code'] = $assets['asset']['value'];
+                    $data['files'] = $assets['assets'];
                     // print_r($assets['asset']['value']);
 
                     // $array = array(
@@ -979,5 +981,21 @@ class Slade extends CI_Controller
                 }
             }
         }
+    }
+
+    public function specific_file($theme, $shop, $token)
+    {
+        // print_r($this->input->post());
+        $array = array(
+            'asset' => array(
+                'key' => $this->input->post('file'),
+                'value' => ''
+            )
+        );
+
+        $assets = $this->Shopify->shopify_call($token, $shop, "/admin/api/2021-01/themes/" . $theme . "/assets.json", $array, 'GET');
+        $assets = json_decode($assets['response'], JSON_PRETTY_PRINT);
+        echo $assets['asset']['value'];
+        // print_r($assets);
     }
 }
