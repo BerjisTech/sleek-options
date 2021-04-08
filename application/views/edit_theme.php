@@ -16,7 +16,7 @@
         <?php endforeach; ?>
     </div>
     <div style="flex-grow: 4;">
-        <div class="file-name" style="font-size: 16px; color: #000000; font-weight: 700;">No file selected</div>
+        <div class="file-name " style="font-size: 16px; color: #000000; font-weight: 700; padding:10px 5px;">No file selected</div>
         <div id="editor">
 
         </div>
@@ -30,7 +30,8 @@
     editor.session.setMode("ace/mode/ruby");
 
     function pullFile(file) {
-        $('.file-name').html('<img src="<?php echo base_url('assets/images/loader.gif'); ?>" style="height: 5vh;"/>');
+        $('.file-name').html('<img src="<?php echo base_url('assets/images/loader.gif'); ?>" style="height: 10vh;"/>');
+        $('.file-name').addClass('text-center')
         $.ajax({
             url: '<?php echo base_url('specific_file/' . $theme . '/' . $shop . '/' . $token); ?>',
             method: 'POST',
@@ -39,10 +40,14 @@
             },
             success: (d) => {
                 editor.setValue(d);
+                editor.getSession().getUndoManager().reset();
+                $('.file-name').removeClass('text-center')
                 $('.file-name').html(file);
             },
             error: (d) => {
                 editor.setValue(d);
+                editor.getSession().getUndoManager().reset();
+                $('.file-name').removeClass('text-center')
                 $('.file-name').html('error');
             }
         })
